@@ -1,6 +1,7 @@
 """Main file to """
 
 import time
+from typing import Tuple
 
 import requests
 from bs4 import BeautifulSoup
@@ -67,43 +68,69 @@ def scrap_links(source, link_css_class: str, domain: str) -> list:
     return links
 
 
-def scrap_product_data(source) -> dict:
-    """Scrap product data for arttidesign."""
-    soup = BeautifulSoup(source, "lxml")
+def scrap_single_product_data(source) -> Tuple[str, dict]:
+    """Scrap product data for single product for arttidesign."""
     product_dict = {}
+
+    product_name = source.find("a", {"class": "cs-goods-title"}).text.strip()
+    # print(product_name)
+    product_link = source.find("a", {"class": "cs-goods-title"}).get("href")
+    # print(product_link)
+    product_price = source.find(
+        "span",
+        {"class": "cs-goods-price__value cs-goods-price__value_type_current"},
+    ).text.strip()
+    # print(product_price)
+    product_sku = (
+        source.find("span", {"class": "cs-goods-sku"}).text.strip().replace("Код: ", "")
+    )
+    # print(product_sku)
+    product_stock = source.find(
+        "div", {"class": "cs-goods-data cs-product-gallery__data"}
+    ).text.strip()
+    # print(product_stock)
+
+    product_dict[product_sku] = {
+        "name": product_name,
+        "sku": product_sku,
+        "price": product_price,
+        "stock": product_stock,
+        "link": product_link,
+    }
+    return (product_sku, product_dict)
+
+
+def all_products_container(source):
+    soup = BeautifulSoup(source, "lxml")
 
     main_content = soup.findAll(
         "li", {"class": "cs-product-gallery__item js-productad"}
     )
-    for item in main_content:
-        product_name = item.find("a", {"class": "cs-goods-title"}).text.strip()
-        # print(product_name)
-        product_link = item.find("a", {"class": "cs-goods-title"}).get("href")
-        # print(product_link)
-        product_price = item.find(
-            "span",
-            {"class": "cs-goods-price__value cs-goods-price__value_type_current"},
-        ).text.strip()
-        # print(product_price)
-        product_sku = (
-            item.find("span", {"class": "cs-goods-sku"})
-            .text.strip()
-            .replace("Код: ", "")
-        )
-        # print(product_sku)
-        product_stock = item.find(
-            "div", {"class": "cs-goods-data cs-product-gallery__data"}
-        ).text.strip()
-        # print(product_stock)
+    return main_content
 
-        product_dict[product_sku] = {
-            "name": product_name,
-            "sku": product_sku,
-            "price": product_price,
-            "stock": product_stock,
-            "link": product_link,
-        }
-    return product_dict
+
+def monitor_changes(source):
+    """Monitor changes on a web site."""
+    for item in all_products_container(source):
+        single_result_sku, single_result_dict = scrap_single_product_data(item)
+        json_products_list = read_json_file("arttidesign")["products"]
+        print(single_result_sku)
+
+        if single_result_sku in json_products_list.keys():
+            if (
+                single_result_dict[single_result_sku]
+                == json_products_list[single_result_sku]
+            ):
+                print("No changes")
+            else:
+                print("Changes")
+                json_products_list[single_result_sku] = single_result_dict[
+                    single_result_sku
+                ]
+                append_to_json_file(json_products_list, "arttidesign")
+        else:
+            print("New product added")
+            append_to_json_file(single_result_dict, "arttidesign")
 
 
 if __name__ == "__main__":
@@ -149,18 +176,22 @@ if __name__ == "__main__":
     }
     request = RequestHandler(headers=header)
 
-    i = 1
-    while i < 3:
-        paginator_url = read_json_file("arttidesign")["paginator_pattern"].replace(
-            "$page", str(i)
-        )
-        print(paginator_url)
-        page_request = request.read_url(paginator_url)
-        if page_request.status_code != 200:
-            break
-        new_data = scrap_product_data(page_request.text)
-        append_to_json_file(new_data, "arttidesign")
-        i += 1
+    # i = 1
+    # while i < 3:
+    #     paginator_url = read_json_file("arttidesign")["paginator_pattern"].replace(
+    #         "$page", str(i)
+    #     )
+    #     page_request = request.read_url(paginator_url)
+    #     print("Processing", paginator_url, page_request.status_code)
+    #
+    #     if page_request.status_code != 200:
+    #         break
+    #
+    #     new_data = scrap_single_product_data(page_request.text)
+    #     append_to_json_file(new_data, "arttidesign")
+    #     i += 1
+
+    monitor_changes(read_html_file("test_container"))
 
     # paginator_links = request.read_url()
     # paginator_links = scrap.scrap_links(category.text, "b-pager__link", "https://arttidesign.com.ua")
