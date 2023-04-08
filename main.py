@@ -62,7 +62,7 @@ def save_to_json_file(data, file_name: str) -> None:
 def append_to_json_file(data, file_name: str) -> None:
     """Append data to json file."""
     existing_data = read_json_file(file_name)
-    existing_data["products"].update(data)
+    existing_data["items"].update(data)
     with open(f"json/{file_name}.json", "w", encoding="utf-8") as f:
         json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
@@ -78,27 +78,27 @@ def scrap_links(source, link_css_class: str, domain: str) -> list:
     return links
 
 
-def scrap_single_product_data(source) -> Tuple[str, dict]:
+def scrap_single_item(source) -> Tuple[str, dict]:
     """Scrap product data for single product for arttidesign."""
     product_dict = {}
 
     product_name = source.find("a", {"class": "cs-goods-title"}).text.strip()
-    # print(product_name)
+    # ic(product_name)
     product_link = source.find("a", {"class": "cs-goods-title"}).get("href")
-    # print(product_link)
+    # ic(product_link)
     product_price = source.find(
         "span",
         {"class": "cs-goods-price__value cs-goods-price__value_type_current"},
     ).text.strip()
-    # print(product_price)
+    # ic(product_price)
     product_sku = (
         source.find("span", {"class": "cs-goods-sku"}).text.strip().replace("Код: ", "")
     )
-    # print(product_sku)
+    # ic(product_sku)
     product_stock = source.find(
         "div", {"class": "cs-goods-data cs-product-gallery__data"}
     ).text.strip()
-    # print(product_stock)
+    # ic(product_stock)
 
     product_dict[product_sku] = {
         "name": product_name,
@@ -107,10 +107,10 @@ def scrap_single_product_data(source) -> Tuple[str, dict]:
         "stock": product_stock,
         "link": product_link,
     }
-    return (product_sku, product_dict)
+    return product_sku, product_dict
 
 
-def all_products_container(source):
+def all_items_container(source):
     soup = BeautifulSoup(source, "lxml")
 
     main_content = soup.findAll(
@@ -119,72 +119,47 @@ def all_products_container(source):
     return main_content
 
 
-def monitor_changes(source):
-    """Monitor changes on a web site."""
-    for item in all_products_container(source):
-        single_result_sku, single_result_dict = scrap_single_product_data(item)
-        json_products_list = read_json_file("arttidesign")["products"]
-        print(single_result_sku)
+def check_changes(source):
+    """Check for changes on a website."""
+    changed_or_new_items = []
+    json_items_list = read_json_file("arttidesign")["items"]
 
-        if single_result_sku in json_products_list.keys():
+    for item in all_items_container(source):
+        single_result_sku, single_result_dict = scrap_single_item(item)
+
+        # ic(single_result_dict[single_result_sku])
+        # ic(json_items_list[single_result_sku])
+
+        if single_result_sku in json_items_list.keys():
             if (
                 single_result_dict[single_result_sku]
-                == json_products_list[single_result_sku]
+                != json_items_list[single_result_sku]
             ):
-                print("No changes")
-            else:
-                print("Changes")
-                json_products_list[single_result_sku] = single_result_dict[
+                ic("Changes found")
+                json_items_list[single_result_sku] = single_result_dict[
                     single_result_sku
                 ]
-                append_to_json_file(json_products_list, "arttidesign")
+                changed_or_new_items.append(single_result_dict[single_result_sku])
+                append_to_json_file(json_items_list, "arttidesign")
         else:
-            print("New product added")
+            ic("New product added")
+            changed_or_new_items.append(single_result_dict[single_result_sku])
             append_to_json_file(single_result_dict, "arttidesign")
+
+    if changed_or_new_items:
+        ic(changed_or_new_items)
+        send_email(changed_or_new_items)
 
 
 if __name__ == "__main__":
-    # save all html files from category
-    # for i in range(1, 6):
-    #     url = read_url(f"https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/page_{i}")
-    #     if url.status_code == 200:
-    #         save_html_file("index", url, i)
-    #     else:
-    #         print(f"404 - {i}")
-    #         break
-
-    # scrap all product names and links from html files and save result to json
-    # links_data_dict = {}
-    # for i in range(1, 6):
-    #     try:
-    #         file = read_html_file(f"index_{i}")
-    #         links_data_dict.update(scrap_links(file))
-    #     except FileNotFoundError:
-    #         print("File not found")
-    #         break
-    #
-    # save_to_json(data=links_data_dict, file_name="links_data")
-
-    # save html product pages
-    # i = 0
-    # for item in read_json_file("links_data").values():
-    #     link = read_url(url=item, delay=0.5)
-    #
-    #     if link.status_code == 200:
-    #         save_html_file("product", link, i)
-    #         print(link.status_code)
-    #     else:
-    #         print(link.status_code)
-    #         continue
-    #
-    #     i += 1
 
     # scrap product data
-    header = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/111.0.0.0 Safari/537.36"
-    }
-    request = RequestHandler(headers=header)
+    request = RequestHandler()
+    # response = request.read_url("https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/")
+    # monitor_changes(response.text)
+
+    check_changes(read_html_file("test_container"))
+    # send_email("test")
 
     # i = 1
     # while i < 3:
@@ -192,7 +167,7 @@ if __name__ == "__main__":
     #         "$page", str(i)
     #     )
     #     page_request = request.read_url(paginator_url)
-    #     print("Processing", paginator_url, page_request.status_code)
+    #     ic("Processing", paginator_url, page_request.status_code)
     #
     #     if page_request.status_code != 200:
     #         break
@@ -201,12 +176,10 @@ if __name__ == "__main__":
     #     append_to_json_file(new_data, "arttidesign")
     #     i += 1
 
-    monitor_changes(read_html_file("test_container"))
-
     # paginator_links = request.read_url()
     # paginator_links = scrap.scrap_links(category.text, "b-pager__link", "https://arttidesign.com.ua")
-    # print(paginator_links)
-    # print(len(paginator_links))
+    # ic(paginator_links)
+    # ic(len(paginator_links))
 
     # request.read_url()
     # for i in params_file.read_json_file("arttidesign")["links"].values():
@@ -217,9 +190,9 @@ if __name__ == "__main__":
     #     try:
     #         file = read_html_file(f"product_{i}")
     #         products.append(scrap_product_data(file))
-    #         print(f"Processing file {i}")
+    #         ic(f"Processing file {i}")
     #     except FileNotFoundError:
-    #         print(f"File {i} not found")
+    #         ic(f"File {i} not found")
     #         break
     #
-    # save_to_json(products, "products")
+    # save_to_json(products, "items")
