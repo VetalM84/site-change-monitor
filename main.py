@@ -3,6 +3,8 @@
 import time
 from typing import Tuple
 
+from icecream import ic
+from mail import send_email
 import requests
 from bs4 import BeautifulSoup
 import json
@@ -13,12 +15,20 @@ from requests import Response
 class RequestHandler:
     """Class to work with requests."""
 
-    def __init__(self, headers: dict):
-        self.headers = headers
+    def __init__(self):
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/111.0.0.0 Safari/537.36"
+        }
+        self._headers = headers
+
+    def set_headers(self, headers: dict) -> None:
+        """Set headers."""
+        self._headers = headers
 
     def read_url(self, url: str, delay: int = 0) -> Response:
         """Read url and return response. Delay is in seconds."""
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self._headers)
         time.sleep(delay)
         return response
 
