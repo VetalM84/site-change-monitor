@@ -1,13 +1,13 @@
 """Main file to """
 
-import projects_configs
+import json
 import time
+from pathlib import Path
 from typing import Tuple
 
 import requests
 from bs4 import BeautifulSoup
 from icecream import ic
-from pathlib import Path
 from requests import Response
 
 from mail import send_email
@@ -51,7 +51,7 @@ class JsonHandler:
     def read_json_file(self) -> dict:
         """Read json file."""
         with open(self.full_path, "r", encoding="utf-8") as f:
-            data = projects_configs.load(f)
+            data = json.load(f)
         return data
 
 
@@ -64,14 +64,14 @@ class JsonItemsHandler(JsonHandler):
     def save_to_json_file(self, data) -> None:
         """Save data to json file."""
         with open(self.full_path, "w", encoding="utf-8") as f:
-            projects_configs.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(data, f, indent=4, ensure_ascii=False)
 
     def append_to_json_file(self, data) -> None:
         """Append data to json file."""
         existing_data = self.read_json_file()
-        existing_data["items"].update(data)
+        existing_data.update(data)
         with open(self.full_path, "w", encoding="utf-8") as f:
-            projects_configs.dump(existing_data, f, indent=4, ensure_ascii=False)
+            json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
 
 def save_html_file(file_name, response, counter=0) -> None:
