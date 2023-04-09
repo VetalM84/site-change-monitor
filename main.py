@@ -65,6 +65,17 @@ class JsonItemsHandler(JsonHandler):
 
     def __init__(self, file_dir: str, file_name: str):
         super().__init__(file_dir, file_name)
+        # Check if the directory exists, and create it if it doesn't.
+        Path(file_dir).mkdir(parents=True, exist_ok=True)
+
+    def read_json_file(self):
+        """Read json items file, create it if it is not exists."""
+        if not self.full_path.exists():
+            with open(self.full_path, "w", encoding="utf-8") as f:
+                json.dump({}, f)
+        with open(self.full_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
 
     def save_to_json_file(self, data) -> None:
         """Save data to json file."""
