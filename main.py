@@ -59,8 +59,25 @@ class JsonHandler:
             return {}
 
 
+class JsonProjectConfig(JsonHandler):
+    """Class to work with json files with project config."""
 
-class JsonItemsHandler(JsonHandler):
+    def __init__(self, file_dir: str, file_name: str):
+        super().__init__(file_dir, file_name)
+        self._item_fields = self.get_project_config()["item_fields"]
+
+        self.title = self._item_fields.get("title", None)
+        self.sku = self._item_fields.get("sku", None)
+        self.price = self._item_fields.get("price", None)
+        self.stock = self._item_fields.get("stock", None)
+        self.link = self._item_fields.get("link", None)
+
+    def get_project_config(self) -> dict:
+        """Get project config."""
+        return self.read_json_file()
+
+
+class JsonItems(JsonHandler):
     """Class to work with json files with items."""
 
     def __init__(self, file_dir: str, file_name: str):
@@ -114,27 +131,35 @@ def scrap_links(source, link_css_class: str, domain: str) -> list:
     return links
 
 
-def scrap_single_item(source) -> Tuple[str, dict]:
+def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str, dict]:
     """Scrap product data for single product for arttidesign."""
     product_dict = {}
 
-    product_name = source.find("a", {"class": "cs-goods-title"}).text.strip()
-    # ic(product_name)
-    product_link = source.find("a", {"class": "cs-goods-title"}).get("href")
-    # ic(product_link)
+    product_name = source.find(
+        project_settings.title["tag"], {"class": project_settings.title["class"]}
+    ).text.strip()
+    ic(product_name)
+    product_link = source.find(
+        project_settings.link["tag"], {"class": project_settings.link["class"]}
+    ).get("href")
+    ic(product_link)
     product_price = source.find(
-        "span",
-        {"class": "cs-goods-price__value cs-goods-price__value_type_current"},
+        project_settings.price["tag"], {"class": project_settings.price["class"]}
     ).text.strip()
-    # ic(product_price)
+    ic(product_price)
+    # TODO: fix replace in sku
     product_sku = (
-        source.find("span", {"class": "cs-goods-sku"}).text.strip().replace("Код: ", "")
+        source.find(
+            project_settings.sku["tag"], {"class": project_settings.sku["class"]}
+        )
+        .text.strip()
+        .replace("Код: ", "")
     )
-    # ic(product_sku)
+    ic(product_sku)
     product_stock = source.find(
-        "div", {"class": "cs-goods-data cs-product-gallery__data"}
+        project_settings.stock["tag"], {"class": project_settings.stock["class"]}
     ).text.strip()
-    # ic(product_stock)
+    ic(product_stock)
 
     product_dict[product_sku] = {
         "name": product_name,
@@ -157,13 +182,17 @@ def get_all_items_to_check(source):
     return main_content
 
 
-def check_changes(source, json_items_list_instance: JsonItemsHandler):
+def check_changes(
+    source, items_list_instance: JsonItems, project_settings: JsonProjectConfig
+):
     """Check for changes on a website."""
     changed_or_new_items = []
-    items_list = json_items_list_instance.read_json_file()
+    items_list = items_list_instance.read_json_file()
 
     for item in get_all_items_to_check(source):
-        single_result_sku, single_result_dict = scrap_single_item(item)
+        single_result_sku, single_result_dict = scrap_single_item(
+            item, project_settings
+        )
 
         # ic(single_result_dict[single_result_sku])
         # ic(json_items_list[single_result_sku])
@@ -173,11 +202,11 @@ def check_changes(source, json_items_list_instance: JsonItemsHandler):
                 ic("Changes found")
                 items_list[single_result_sku] = single_result_dict[single_result_sku]
                 changed_or_new_items.append(single_result_dict[single_result_sku])
-                json_items_list_instance.append_to_json_file(data=items_list)
+                items_list_instance.append_to_json_file(data=items_list)
         else:
             ic("New product added")
             changed_or_new_items.append(single_result_dict[single_result_sku])
-            json_items_list_instance.append_to_json_file(data=single_result_dict)
+            items_list_instance.append_to_json_file(data=single_result_dict)
 
     if changed_or_new_items:
         ic(changed_or_new_items)
@@ -186,12 +215,14 @@ def check_changes(source, json_items_list_instance: JsonItemsHandler):
 
 if __name__ == "__main__":
     request = RequestHandler()
-    json_project_config = JsonHandler("projects_configs", "arttidesign.json")
-    json_items_list = JsonItemsHandler("items_list_output", "arttidesign_items.json")
+    json_project_config = JsonProjectConfig("projects_configs", "arttidesign.json")
+    json_items_list = JsonItems("items_list_output", "arttidesign_items.json")
     # response = request.read_url("https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/")
     # check_changes(response.text, json_items_list)
 
-    check_changes(read_html_file("test_container"), json_items_list)
+    check_changes(
+        read_html_file("test_container"), json_items_list, json_project_config
+    )
     # send_email("test")
 
     # i = 1
