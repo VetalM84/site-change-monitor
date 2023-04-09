@@ -48,11 +48,16 @@ class JsonHandler:
         file_path = Path(self._file_name)
         return folder_path / file_path
 
-    def read_json_file(self) -> dict:
+    def read_json_file(self):
         """Read json file."""
-        with open(self.full_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
+        try:
+            with open(self.full_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data
+        except FileNotFoundError as e:
+            ic(e)
+            return {}
+
 
 
 class JsonItemsHandler(JsonHandler):
