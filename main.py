@@ -18,11 +18,11 @@ class RequestHandler:
     """Class to work with requests."""
 
     def __init__(self):
-        headers = {
+        __headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/111.0.0.0 Safari/537.36"
         }
-        self._headers = headers
+        self._headers = __headers
 
     def set_headers(self, headers: dict) -> None:
         """Set headers."""
@@ -130,15 +130,29 @@ def read_html_file(file_name: str) -> str:
     return src
 
 
-def scrap_links(source, link_css_class: str, domain: str) -> list:
-    """Scrap links."""
-    links = []
-    soup = BeautifulSoup(source, "lxml")
+# def scrap_links(source, project_settings: JsonProjectConfig) -> list:
+#     """Scrap links."""
+#     links = []
+#     soup = BeautifulSoup(source, "lxml")
+#
+#     for link_tag in soup.findAll(
+#         project_settings.items_container["tag"],
+#         {"class": project_settings.items_container["class"]},
+#     ):
+#         links.append(project_settings.home_url + link_tag.get("href"))
+#
+#     return links
 
-    for link_tag in soup.findAll("a", {"class": link_css_class}):
-        links.append(domain + link_tag.get("href"))
 
-    return links
+# def scrap_links(source, link_css_class: str, domain: str) -> list:
+#     """Scrap links."""
+#     links = []
+#     soup = BeautifulSoup(source, "lxml")
+#
+#     for link_tag in soup.findAll("a", {"class": link_css_class}):
+#         links.append(domain + link_tag.get("href"))
+#
+#     return links
 
 
 def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str, dict]:
@@ -224,18 +238,32 @@ def check_changes(
         send_email(changed_or_new_items)
 
 
+# async def run_task_every_x_seconds(x):
+#     # Schedule the task to run every x seconds
+#     aioschedule.every(x).seconds.do(my_task)
+#     while True:
+#         await aioschedule.run_pending()
+#         await asyncio.sleep(1)
+#
+# async def main():
+#     # Run the task every 5 seconds
+#     await run_task_every_x_seconds(5)
+#
+# # Run the main function in an event loop
+# asyncio.run(main())
+
+
 if __name__ == "__main__":
     request = RequestHandler()
     json_project_config = JsonProjectConfig("projects_configs", "arttidesign.json")
     json_items_list = JsonItems("items_list_output", "arttidesign_items.json")
     # response = request.read_url("https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/")
-    # check_changes(response.text, json_items_list)
+    # check_changes(response.text, json_items_list, json_project_config)
 
-    check_changes(
-        read_html_file("test_container"), json_items_list, json_project_config
-    )
+    # check_changes(
+    #     read_html_file("test_container"), json_items_list, json_project_config
+    # )
     # send_email("test")
-
     # i = 1
     # while i < 3:
     #     paginator_url = read_json_file("arttidesign")["paginator_pattern"].replace(
