@@ -1,6 +1,7 @@
 """Main file to """
 
 import json
+import os
 import time
 from pathlib import Path
 from typing import Tuple
@@ -37,7 +38,9 @@ class RequestHandler:
 class JsonHandler:
     """Class to work with json files."""
 
-    def __init__(self, file_dir: str, file_name: str):
+    def __init__(
+        self, file_dir: str = "projects_configs", file_name: str = "new_project.json"
+    ):
         self._file_dir = file_dir
         self._file_name = file_name
         self.full_path = self.set_full_path()
@@ -76,6 +79,12 @@ class JsonProjectConfig(JsonHandler):
     def get_project_config(self) -> dict:
         """Get project config."""
         return self.read_json_file()
+
+    def find_all_project_files(self) -> list:
+        """Find all json project config files in a directory."""
+        dir_path = Path(self._file_dir)
+        files = os.listdir(dir_path)
+        return [f for f in files if f.endswith(".json")]
 
 
 class JsonItems(JsonHandler):
