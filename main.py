@@ -65,7 +65,8 @@ class JsonProjectConfig(JsonHandler):
     def __init__(self, file_dir: str, file_name: str):
         super().__init__(file_dir, file_name)
         self._item_fields = self.get_project_config()["item_fields"]
-
+        self.home_url = self.get_project_config()["home_url"]
+        self.items_container = self.get_project_config()["items_container"]
         self.title = self._item_fields.get("title", None)
         self.sku = self._item_fields.get("sku", None)
         self.price = self._item_fields.get("price", None)
@@ -171,14 +172,15 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
     return product_sku, product_dict
 
 
-def get_all_items_to_check(source):
+def get_all_items_to_check(source, project_settings: JsonProjectConfig):
     soup = BeautifulSoup(source, "lxml")
 
     main_content = soup.findAll(
-        "li", {"class": "cs-product-gallery__item js-productad"}
+        project_settings.items_container["tag"],
+        {"class": project_settings.items_container["class"]},
     )
     if not main_content:
-        raise ValueError("No main content found")
+        raise ValueError("No items in main content found")
     return main_content
 
 
@@ -189,7 +191,7 @@ def check_changes(
     changed_or_new_items = []
     items_list = items_list_instance.read_json_file()
 
-    for item in get_all_items_to_check(source):
+    for item in get_all_items_to_check(source, project_settings):
         single_result_sku, single_result_dict = scrap_single_item(
             item, project_settings
         )
