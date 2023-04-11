@@ -67,9 +67,12 @@ class JsonProjectConfig(JsonHandler):
 
     def __init__(self, file_dir: str, file_name: str):
         super().__init__(file_dir, file_name)
+        self._project_root = self.get_project_config()
+        self.home_url = self._project_root["home_url"]
+        self.paginator_pattern = self._project_root["paginator_pattern"]
+        self.pagination_count = self._project_root["paginator_count"]
+        self.items_container = self._project_root["items_container"]
         self._item_fields = self.get_project_config()["item_fields"]
-        self.home_url = self.get_project_config()["home_url"]
-        self.items_container = self.get_project_config()["items_container"]
         self.title = self._item_fields.get("title", None)
         self.sku = self._item_fields.get("sku", None)
         self.price = self._item_fields.get("price", None)
