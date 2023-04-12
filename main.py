@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Tuple
 
 import requests
+import schedule
 from bs4 import BeautifulSoup
 from icecream import ic
 from requests import Response
@@ -131,15 +132,15 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
     product_name = source.find(
         project_settings.title["tag"], {"class": project_settings.title["class"]}
     ).text.strip()
-    ic(product_name)
+    # ic(product_name)
     product_link = source.find(
         project_settings.link["tag"], {"class": project_settings.link["class"]}
     ).get("href")
-    ic(product_link)
+    # ic(product_link)
     product_price = source.find(
         project_settings.price["tag"], {"class": project_settings.price["class"]}
     ).text.strip()
-    ic(product_price)
+    # ic(product_price)
     # TODO: fix replace in sku
     product_sku = (
         source.find(
@@ -148,11 +149,11 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
         .text.strip()
         .replace("Код: ", "")
     )
-    ic(product_sku)
+    # ic(product_sku)
     product_stock = source.find(
         project_settings.stock["tag"], {"class": project_settings.stock["class"]}
     ).text.strip()
-    ic(product_stock)
+    # ic(product_stock)
 
     product_dict[product_sku] = {
         "name": product_name,
@@ -232,30 +233,20 @@ def main():
                     project_settings=json_project_config,
                 )
             )
-            # check_changes(
-            #     read_html_file("test_container"), json_items_list, json_project_config
-            # )
-            # ic(changed_or_new_items)
+
         if changed_or_new_items:
             ic(changed_or_new_items)
             send_email(changed_or_new_items)
 
 
-# async def run_task_every_x_seconds(x):
-#     # Schedule the task to run every x seconds
-#     aioschedule.every(x).seconds.do(my_task)
-#     while True:
-#         await aioschedule.run_pending()
-#         await asyncio.sleep(1)
-#
-# async def main():
-#     # Run the task every 5 seconds
-#     await run_task_every_x_seconds(5)
-#
-# # Run the main function in an event loop
-# asyncio.run(main())
+def schedule_task(hours: int):
+    # Schedule the task to run every x hours
+    # TODO: change seconds to hours
+    schedule.every(hours).seconds.do(main)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 
 if __name__ == "__main__":
-
-    main()
+    schedule_task(20)
