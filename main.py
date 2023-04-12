@@ -1,4 +1,4 @@
-"""Main file to """
+"""Main file to scrap items."""
 
 import json
 import os
@@ -38,9 +38,7 @@ class RequestHandler:
 class JsonHandler:
     """Class to work with json files."""
 
-    def __init__(
-        self, file_dir: str = "projects_configs", file_name: str = "new_project.json"
-    ):
+    def __init__(self, file_dir: str, file_name: str):
         self._file_dir = file_dir
         self._file_name = file_name
         self.full_path = self.set_full_path()
@@ -65,7 +63,9 @@ class JsonHandler:
 class JsonProjectConfig(JsonHandler):
     """Class to work with json files with project config."""
 
-    def __init__(self, file_dir: str, file_name: str):
+    def __init__(
+        self, file_dir: str = "projects_configs", file_name: str = "new_project.json"
+    ):
         super().__init__(file_dir, file_name)
         self._project_root = self.get_project_config()
         self.home_url = self._project_root["home_url"]
@@ -83,11 +83,12 @@ class JsonProjectConfig(JsonHandler):
         """Get project config."""
         return self.read_json_file()
 
-    def find_all_project_files(self) -> list:
-        """Find all json project config files in a directory."""
-        dir_path = Path(self._file_dir)
-        files = os.listdir(dir_path)
-        return [f for f in files if f.endswith(".json")]
+
+def find_all_project_files(file_dir) -> list:
+    """Find all json project config files in a directory."""
+    dir_path = Path(file_dir)
+    files = os.listdir(dir_path)
+    return [f for f in files if f.endswith(".json")]
 
 
 class JsonItems(JsonHandler):
@@ -193,12 +194,13 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
         "sku": product_sku,
         "price": product_price,
         "stock": product_stock,
-        "link": product_link,
+        "link": project_settings.home_url + product_link,
     }
     return product_sku, product_dict
 
 
 def get_all_items_to_check(source, project_settings: JsonProjectConfig):
+    """Load project and get all items to check."""
     soup = BeautifulSoup(source, "lxml")
 
     main_content = soup.findAll(
@@ -212,9 +214,9 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig):
 
 def check_changes(
     source, items_list_instance: JsonItems, project_settings: JsonProjectConfig
-):
+) -> list[dict]:
     """Check for changes on a website."""
-    changed_or_new_items = []
+    changed_or_new_items: list[dict] = []
     items_list = items_list_instance.read_json_file()
 
     for item in get_all_items_to_check(source, project_settings):
@@ -236,9 +238,46 @@ def check_changes(
             changed_or_new_items.append(single_result_dict[single_result_sku])
             items_list_instance.append_to_json_file(data=single_result_dict)
 
-    if changed_or_new_items:
-        ic(changed_or_new_items)
-        send_email(changed_or_new_items)
+    return changed_or_new_items
+
+
+def main():
+    """Main function to start the process for every project and send an email if there is any."""
+    changed_or_new_items: list[dict] = []
+    request = RequestHandler()
+
+    for project in find_all_project_files("projects_configs"):
+        json_project_config = JsonProjectConfig(
+            file_dir="projects_configs", file_name=project
+        )
+        json_items_list = JsonItems(
+            file_dir="items_list_output", file_name="output_" + project
+        )
+
+        # iterate over pagination
+        for page_index in range(1, json_project_config.pagination_count + 1):
+            paginator_url = json_project_config.paginator_pattern.replace(
+                "$page", str(page_index)
+            )
+            response = request.read_url(url=paginator_url)
+            ic("Processing", paginator_url, response.status_code)
+
+            if response.status_code != 200:
+                break
+            changed_or_new_items.extend(
+                check_changes(
+                    source=response.text,
+                    items_list_instance=json_items_list,
+                    project_settings=json_project_config,
+                )
+            )
+            # check_changes(
+            #     read_html_file("test_container"), json_items_list, json_project_config
+            # )
+            # ic(changed_or_new_items)
+        if changed_or_new_items:
+            ic(changed_or_new_items)
+            send_email(changed_or_new_items)
 
 
 # async def run_task_every_x_seconds(x):
@@ -257,36 +296,5 @@ def check_changes(
 
 
 if __name__ == "__main__":
-    request = RequestHandler()
-    json_project_config = JsonProjectConfig("projects_configs", "arttidesign.json")
-    json_items_list = JsonItems("items_list_output", "arttidesign_items.json")
-    # response = request.read_url("https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/")
-    # check_changes(response.text, json_items_list, json_project_config)
 
-    # check_changes(
-    #     read_html_file("test_container"), json_items_list, json_project_config
-    # )
-    # send_email("test")
-    # i = 1
-    # while i < 3:
-    #     paginator_url = read_json_file("arttidesign")["paginator_pattern"].replace(
-    #         "$page", str(i)
-    #     )
-    #     page_request = request.read_url(paginator_url)
-    #     ic("Processing", paginator_url, page_request.status_code)
-    #
-    #     if page_request.status_code != 200:
-    #         break
-    #
-    #     new_data = scrap_single_product_data(page_request.text)
-    #     append_to_json_file(new_data, "arttidesign")
-    #     i += 1
-
-    # paginator_links = request.read_url()
-    # paginator_links = scrap.scrap_links(category.text, "b-pager__link", "https://arttidesign.com.ua")
-    # ic(paginator_links)
-    # ic(len(paginator_links))
-
-    # request.read_url()
-    # for i in params_file.read_json_file("arttidesign")["links"].values():
-    #     request.read_url(i, delay=0.5)
+    main()
