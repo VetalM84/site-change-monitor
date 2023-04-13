@@ -2,6 +2,7 @@
 
 import os
 import smtplib
+
 from dotenv import load_dotenv
 from icecream import ic
 
@@ -16,11 +17,10 @@ sender = os.getenv("SENDER")
 receiver = os.getenv("RECEIVER")
 
 
-def send_email(changes):
+def send_email(subject: str, changes=None):
     """Send email."""
     message = f"""\
-    Subject: Changes detected\n
-    Hi! There are some changes:\n
+    Subject: {subject}\n
     {changes}
     """
     try:

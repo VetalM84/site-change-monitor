@@ -1,6 +1,7 @@
 """Main file to scrap items."""
 
 import json
+import logging
 import os
 import time
 from pathlib import Path
@@ -13,6 +14,13 @@ from icecream import ic
 from requests import Response
 
 from mail import send_email
+
+logging.basicConfig(
+    filename="run.log",
+    datefmt="%d-%m-%Y %H:%M:%S",
+    level=logging.ERROR,
+    format="%(asctime)s %(levelname)s:%(message)s",
+)
 
 
 class RequestHandler:
@@ -70,6 +78,7 @@ class JsonProjectConfig(JsonHandler):
     def __init__(self, file_name: str):
         super().__init__(file_name)
         self._project_root = self.get_project_config()
+        self.project_name = self._project_root["project_name"]
         self.home_url = self._project_root["home_url"]
         self.paginator_pattern = self._project_root["paginator_pattern"]
         self.pagination_count = self._project_root["paginator_count"]
@@ -165,7 +174,7 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
     return product_sku, product_dict
 
 
-def get_all_items_to_check(source, project_settings: JsonProjectConfig):
+def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
     """Load project and get all items to check."""
     soup = BeautifulSoup(source, "lxml")
 
@@ -174,7 +183,8 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig):
         {"class": project_settings.items_container["class"]},
     )
     if not main_content:
-        raise ValueError("No items in main content found")
+        logging.error("No items in main content found")
+        send_email(subject=f"No items in {project_settings.project_name} found")
     return main_content
 
 
@@ -236,7 +246,7 @@ def main():
 
         if changed_or_new_items:
             ic(changed_or_new_items)
-            send_email(changed_or_new_items)
+            send_email("Changes detected", changed_or_new_items)
 
 
 def schedule_task(hours: int):
