@@ -4,29 +4,42 @@
     "paginator_pattern": "https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/page_$page",
     "paginator_count": 5,
     "items_container": {
+        "tag": "ul",
+        "class": "cs-product-gallery"
+    },
+    "single_item_container": {
         "tag": "li",
         "class": "cs-product-gallery__item js-productad"
     },
     "item_fields": {
         "title": {
             "tag": "a",
-            "class": "cs-goods-title"
+            "class": "cs-goods-title",
+            "text": true,
+            "strip": true
         },
         "sku": {
             "tag": "span",
-            "class": "cs-goods-sku"
+            "class": "cs-goods-sku",
+            "text": true,
+            "strip": true
         },
         "price": {
             "tag": "span",
-            "class": "cs-goods-price__value cs-goods-price__value_type_current"
+            "class": "cs-goods-price__value cs-goods-price__value_type_current",
+            "text": true,
+            "strip": true
         },
         "stock": {
             "tag": "div",
-            "class": "cs-goods-data cs-product-gallery__data"
+            "class": "cs-goods-data cs-product-gallery__data",
+            "text": true,
+            "strip": true
         },
         "link": {
             "tag": "a",
-            "class": "cs-goods-title"
+            "class": "cs-goods-title",
+            "attr": "href"
         }
     }
 }
