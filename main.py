@@ -85,7 +85,6 @@ class JsonProjectConfig(JsonHandler):
         self.items_container = self._project_root["items_container"]
         self.single_item_container = self._project_root["single_item_container"]
         self.item_fields = self.get_project_config()["item_fields"]
-        self.sku = self.item_fields["sku"]
 
     def get_project_config(self) -> dict:
         """Get project config."""
@@ -133,21 +132,16 @@ class JsonItems(JsonHandler):
 
 def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str, dict]:
     """Scrap product data for single product."""
-    # get_text()
-    # function https://www.crummy.com/software/BeautifulSoup/bs4/doc.ru/bs4ru.html#id32
-    # soup.select("p:nth-of-type(3)") https://www.crummy.com/software/BeautifulSoup/bs4/doc.ru/bs4ru.html#id40
 
-    product_dict = {}
-    product_sku = project_settings.sku
+    product_dict_sku, product_dict = {}, {}
 
     for field in project_settings.item_fields:
-        ic(field)
+        # ic(field)
         result = source.find(
             project_settings.item_fields[field].get("tag"),
             class_=project_settings.item_fields[field].get("class"),
         )
         try:
-            # TODO: add replace
             if project_settings.item_fields[field].get("text"):
                 result = result.text
             if project_settings.item_fields[field].get("strip"):
@@ -160,23 +154,9 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
 
         if result:
             product_dict[field] = result
-    ic(product_dict)
 
-    # # TODO: fix replace in sku
-    # product_sku = (
-    #     source.find(
-    #         project_settings.sku["tag"], {"class": project_settings.sku["class"]}
-    #     )
-    #     .text.strip()
-    #     .replace("Код: ", "")
-    # product_dict[product_sku] = {
-    #     "name": product_name,
-    #     "sku": product_sku,
-    #     "price": product_price,
-    #     "stock": product_stock,
-    #     "link": project_settings.home_url + product_link,
-    # }
-    return product_dict["sku"], product_dict
+    product_dict_sku[product_dict["sku"]] = product_dict
+    return product_dict["sku"], product_dict_sku
 
 
 def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
@@ -184,12 +164,12 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
     soup = BeautifulSoup(source, "lxml")
     items_container = soup.find(
         project_settings.items_container["tag"],
-        {"class": project_settings.items_container["class"]},
+        class_=project_settings.items_container["class"],
     )
 
     all_items_list = items_container.findAll(
         project_settings.single_item_container["tag"],
-        {"class": project_settings.single_item_container["class"]},
+        class_=project_settings.single_item_container["class"],
     )
     if not all_items_list:
         logging.error("No items in main content found")
@@ -206,13 +186,9 @@ def check_changes(
     items_list = items_list_instance.read_json_file()
 
     for item in get_all_items_to_check(source, project_settings):
-        ic(scrap_single_item(item, project_settings))
         single_result_sku, single_result_dict = scrap_single_item(
             item, project_settings
         )
-
-        ic(single_result_dict[single_result_sku])
-        ic(items_list[single_result_sku])
 
         if single_result_sku in items_list.keys():
             if single_result_dict[single_result_sku] != items_list[single_result_sku]:
@@ -230,10 +206,10 @@ def check_changes(
 
 def main():
     """Main function to start the process for every project and send an email if there is any."""
-    changed_or_new_items: list[dict] = []
     request = RequestHandler()
 
     for project in JsonProjectConfig.find_all_project_files():
+        changed_or_new_items: list[dict] = []
         json_project_config = JsonProjectConfig(file_name=project)
         json_items_list = JsonItems(file_name="output_" + project)
 
@@ -256,7 +232,7 @@ def main():
             )
 
         if changed_or_new_items:
-            ic(changed_or_new_items)
+            # ic(changed_or_new_items)
             send_email("Changes detected", changed_or_new_items)
 
 
