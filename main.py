@@ -167,10 +167,15 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
 def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
     """Load project and get all items to check."""
     soup = BeautifulSoup(source, "lxml")
-    items_container = soup.find(
-        project_settings.items_container["tag"],
-        class_=project_settings.items_container["class"],
-    )
+    if project_settings.items_container.get("tag"):
+        items_container = soup.find(
+            project_settings.items_container["tag"],
+            class_=project_settings.items_container["class"],
+        )
+    else:
+        items_container = soup.select_one(
+            project_settings.items_container.get("selector")
+        )
 
     all_items_list = items_container.findAll(
         project_settings.single_item_container["tag"],
@@ -178,6 +183,7 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
     )
     if not all_items_list:
         logging.error("No items in main content found")
+        ic("No items in main content found")
         send_email(subject=f"No items in {project_settings.project_name} found")
     return all_items_list
 
