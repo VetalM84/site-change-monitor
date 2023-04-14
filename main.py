@@ -90,6 +90,8 @@ class JsonProjectConfig(JsonHandler):
 
     def get_project_config(self) -> dict:
         """Get project config."""
+        if not Path(self._file_dir).exists():
+            Path(self._file_dir).mkdir(parents=True, exist_ok=True)
         return self.read_json_file()
 
     @staticmethod
@@ -216,7 +218,7 @@ def main():
         json_items_list = JsonItems(file_name="output_" + project)
 
         # iterate over pagination
-        for page_index in range(1, 2):
+        for page_index in range(1, json_project_config.pagination_count + 1):
             paginator_url = json_project_config.paginator_pattern.replace(
                 "$page", str(page_index)
             )
