@@ -222,7 +222,7 @@ def main():
             paginator_url = json_project_config.paginator_pattern.replace(
                 "$page", str(page_index)
             )
-            response = request.read_url(url=paginator_url)
+            response = request.read_url(url=paginator_url, delay=3)
             ic("Processing", paginator_url, response.status_code)
 
             if response.status_code != 200:
