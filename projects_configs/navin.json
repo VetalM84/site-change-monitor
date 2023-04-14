@@ -12,12 +12,6 @@
         "class": "product-thumb"
     },
     "item_fields": {
-        "title": {
-            "tag": "div",
-            "class": "product-name",
-            "text": true,
-            "strip": true
-        },
         "sku": {
             "tag": "div",
             "class": "product-name",
