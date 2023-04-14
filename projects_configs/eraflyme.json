@@ -1,0 +1,30 @@
+{
+    "project_name": "eraflyme",
+    "home_url": "https://flyme.ua/ru",
+    "paginator_pattern": "https://flyme.ua/ru/polotencesushiteli/page-$page",
+    "paginator_count": 2,
+    "items_container": {
+        "selector": "#mfilter-content-container > div:nth-child(5)"
+    },
+    "single_item_container": {
+        "tag": "div",
+        "class": "product-thumb"
+    },
+    "item_fields": {
+        "sku": {
+            "tag": "h4",
+            "text": true,
+            "strip": true
+        },
+        "price": {
+            "tag": "div",
+            "class": "price",
+            "text": true,
+            "strip": true
+        },
+        "link": {
+            "tag": "a",
+            "attr": "href"
+        }
+    }
+}
