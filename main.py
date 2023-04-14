@@ -85,6 +85,8 @@ class JsonProjectConfig(JsonHandler):
         self.items_container = self._project_root["items_container"]
         self.single_item_container = self._project_root["single_item_container"]
         self.item_fields = self.get_project_config()["item_fields"]
+        if "SKU" not in self.item_fields:
+            logging.error(f"SKU field not found in item_fields for {self.project_name}")
 
     def get_project_config(self) -> dict:
         """Get project config."""
