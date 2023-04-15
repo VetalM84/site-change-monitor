@@ -2,6 +2,8 @@
 
 import os
 import smtplib
+import ssl
+from email import message
 
 from dotenv import load_dotenv
 from icecream import ic
@@ -17,16 +19,23 @@ sender = os.getenv("SENDER")
 receiver = os.getenv("RECEIVER")
 
 
+m = message.Message()
+
+
 def send_email(subject: str, changes=None):
     """Send email."""
-    message = f"""\
-    Subject: {subject}\n
-    {changes}
-    """
+    m.add_header("from", sender)
+    m.add_header("to", receiver)
+    m.add_header("subject", subject)
+    m.set_payload(payload=str(*changes), charset="utf-8")
+
+    context = ssl.create_default_context()
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
+        with smtplib.SMTP_SSL(
+            smtp_server, smtp_port, context=context, timeout=20
+        ) as server:
             server.login(smtp_username, smtp_password)
-            server.sendmail(sender, receiver, message.encode("utf-8"))
+            server.sendmail(sender, receiver, m.as_string())
         ic("Email sent")
     except Exception as e:
         ic(e)
