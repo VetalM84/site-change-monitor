@@ -20,11 +20,9 @@ sender = os.getenv("SENDER")
 receiver = os.getenv("RECEIVER")
 
 
-m = message.Message()
-
-
 def send_email(subject: str, changes=None):
     """Send email."""
+    m = message.Message()
     m.add_header("from", sender)
     m.add_header("to", receiver)
     m.add_header("subject", subject)
