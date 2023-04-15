@@ -1,5 +1,6 @@
 """Email worker."""
 
+import logging
 import os
 import smtplib
 import ssl
@@ -38,4 +39,5 @@ def send_email(subject: str, changes=None):
             server.sendmail(sender, receiver, m.as_string())
         ic("Email sent")
     except Exception as e:
+        logging.error(e)
         ic(e)
