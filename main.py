@@ -100,7 +100,7 @@ class JsonProjectConfig(JsonHandler):
         """Find all json project config files in a directory."""
         dir_path = Path(file_dir)
         files = os.listdir(dir_path)
-        return [f for f in files if f.endswith(".json")]
+        return sorted([f for f in files if f.endswith(".json")])
 
 
 class JsonItems(JsonHandler):
@@ -230,10 +230,11 @@ def main():
                 "$page", str(page_index)
             )
             response = request.read_url(url=paginator_url, delay=3)
-            ic("Processing", paginator_url, response.status_code)
+            ic(paginator_url, response.status_code)
 
             if response.status_code != 200:
                 break
+
             changed_or_new_items.extend(
                 check_changes(
                     source=response.text,
@@ -244,7 +245,7 @@ def main():
 
         if changed_or_new_items:
             # ic(changed_or_new_items)
-            send_email("Changes detected", changed_or_new_items)
+            send_email(f"Changes detected in {json_project_config.project_name}", changed_or_new_items)
 
 
 def schedule_task(hours: int):
