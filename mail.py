@@ -28,7 +28,7 @@ def send_email(subject: str, changes=None):
     m.add_header("from", sender)
     m.add_header("to", receiver)
     m.add_header("subject", subject)
-    m.set_payload(payload=str(*changes), charset="utf-8")
+    m.set_payload(payload=str(changes), charset="utf-8")
 
     context = ssl.create_default_context()
     try:
