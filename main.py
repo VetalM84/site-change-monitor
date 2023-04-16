@@ -153,6 +153,8 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
                 result = result.strip()
             if project_settings.item_fields[field].get("attr"):
                 result = result.get(project_settings.item_fields[field].get("attr"))
+            if project_settings.item_fields[field].get("prepend"):
+                result = project_settings.item_fields[field].get("prepend") + result
         except (KeyError, AttributeError) as e:
             ic(e)
             pass

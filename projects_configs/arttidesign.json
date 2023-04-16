@@ -39,7 +39,8 @@
         "link": {
             "tag": "a",
             "class": "cs-goods-title",
-            "attr": "href"
+            "attr": "href",
+            "prepend": "https://arttidesign.com.ua"
         }
     }
 }
