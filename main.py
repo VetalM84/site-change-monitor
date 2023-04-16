@@ -245,7 +245,10 @@ def main():
 
         if changed_or_new_items:
             # ic(changed_or_new_items)
-            send_email(f"Changes detected in {json_project_config.project_name}", changed_or_new_items)
+            send_email(
+                f"Changes detected in {json_project_config.project_name}",
+                changed_or_new_items,
+            )
 
 
 def schedule_task(hours: int):
