@@ -46,8 +46,9 @@ class JsonItemsS3Storage(JsonHandler):
             content = json.loads(self.s3_object.get()["Body"].read().decode("utf-8"))
             return content
         except Exception as e:
-            ic(e)
-            return self.save_to_json_file({})
+            ic("read_json_file", e)
+            self.save_to_json_file({})
+            return {}
 
     def save_to_json_file(self, data) -> None:
         """Save a json file to the S3 bucket."""
