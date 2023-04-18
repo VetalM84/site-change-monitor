@@ -19,7 +19,7 @@ AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 class JsonItemsS3Storage(JsonHandler):
     """Class to work with json files contains items on AWS S3 bucket."""
 
-    _file_dir: str = "../items_list_output"
+    _file_dir: str = "items_list_output"
 
     def __init__(self, file_name: str):
         super().__init__(file_name)
@@ -51,12 +51,18 @@ class JsonItemsS3Storage(JsonHandler):
 
     def save_to_json_file(self, data) -> None:
         """Save a json file to the S3 bucket."""
-        self.s3_object.put(
-            Body=json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8")
-        )
+        try:
+            self.s3_object.put(
+                Body=json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8")
+            )
+        except Exception as e:
+            ic("save_to_json_file", e)
 
     def append_to_json_file(self, data) -> None:
         """Append data to the existing json file on S3 bucket."""
-        existing_data = self.read_json_file()
-        existing_data.update(data)
-        self.save_to_json_file(existing_data)
+        try:
+            existing_data = self.read_json_file()
+            existing_data.update(data)
+            self.save_to_json_file(existing_data)
+        except Exception as e:
+            ic("append_to_json_file", e)
