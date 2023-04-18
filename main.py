@@ -9,11 +9,16 @@ from typing import Tuple, Union
 import requests
 import schedule
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from icecream import ic
 from requests import Response
 
 from json_items_handlers import JsonHandler, JsonItemsLocalStorage, JsonItemsS3Storage
 from mail import send_email
+
+load_dotenv()
+
+USE_AWS_S3_STORAGE = bool(int(os.getenv("USE_AWS_S3_STORAGE")))
 
 logging.basicConfig(
     filename="run.log",
@@ -83,7 +88,6 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
     product_dict_sku, product_dict = {}, {}
 
     for field in project_settings.item_fields:
-        # ic(field)
         result = source.find(
             project_settings.item_fields[field].get("tag"),
             class_=project_settings.item_fields[field].get("class"),
@@ -168,7 +172,11 @@ def main():
     for project in JsonProjectConfig.find_all_project_files():
         changed_or_new_items: list[dict] = []
         json_project_config = JsonProjectConfig(file_name=project)
-        json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
+        # instantiate storage class depend on the hosting
+        if USE_AWS_S3_STORAGE:
+            json_items_list = JsonItemsS3Storage(file_name="output_" + project)
+        else:
+            json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
         # iterate over pagination
         for page_index in range(1, json_project_config.pagination_count + 1):
