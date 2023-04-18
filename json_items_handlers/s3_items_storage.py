@@ -4,11 +4,10 @@ import json
 import os
 
 import boto3
-
 from dotenv import load_dotenv
 from icecream import ic
 
-from main import JsonHandler
+from json_items_handlers.json_handler import JsonHandler
 
 load_dotenv()
 
@@ -17,10 +16,10 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 
 
-class S3Storage(JsonHandler):
-    """Class to work with AWS S3 bucket."""
+class JsonItemsS3Storage(JsonHandler):
+    """Class to work with json files contains items on AWS S3 bucket."""
 
-    _file_dir: str = "items_list_output"
+    _file_dir: str = "../items_list_output"
 
     def __init__(self, file_name: str):
         super().__init__(file_name)
@@ -37,7 +36,7 @@ class S3Storage(JsonHandler):
             key=self.set_full_path(),
         )
 
-    def set_full_path(self):
+    def set_full_path(self) -> str:
         """Set full path to file on the S3 bucket."""
         return "/".join([self._file_dir, self._file_name])
 

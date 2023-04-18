@@ -1,11 +1,10 @@
 """Main file to scrap items."""
 
-import json
 import logging
 import os
 import time
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Union
 
 import requests
 import schedule
@@ -13,6 +12,7 @@ from bs4 import BeautifulSoup
 from icecream import ic
 from requests import Response
 
+from json_items_handlers import JsonHandler, JsonItemsLocalStorage, JsonItemsS3Storage
 from mail import send_email
 
 logging.basicConfig(
@@ -42,32 +42,6 @@ class RequestHandler:
         response = requests.get(url, headers=self._headers)
         time.sleep(delay)
         return response
-
-
-class JsonHandler:
-    """Class to work with json files."""
-
-    _file_dir: str = None
-
-    def __init__(self, file_name: str):
-        self._file_name = file_name
-        self.full_path = self.set_full_path()
-
-    def set_full_path(self) -> Path:
-        """Set ful path file dir."""
-        folder_path = Path(self._file_dir)
-        file_path = Path(self._file_name)
-        return folder_path / file_path
-
-    def read_json_file(self):
-        """Read json file."""
-        try:
-            with open(self.full_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data
-        except FileNotFoundError as e:
-            ic(e)
-            return {}
 
 
 class JsonProjectConfig(JsonHandler):
@@ -101,38 +75,6 @@ class JsonProjectConfig(JsonHandler):
         dir_path = Path(file_dir)
         files = os.listdir(dir_path)
         return sorted([f for f in files if f.endswith(".json")])
-
-
-class JsonItems(JsonHandler):
-    """Class to work with json files with items."""
-
-    _file_dir: str = "items_list_output"
-
-    def __init__(self, file_name: str):
-        super().__init__(file_name)
-        # Check if the directory exists, and create it if it doesn't.
-        Path(self._file_dir).mkdir(parents=True, exist_ok=True)
-
-    def read_json_file(self):
-        """Read json items file, create it if it is not exists."""
-        if not self.full_path.exists():
-            with open(self.full_path, "w", encoding="utf-8") as f:
-                json.dump({}, f)
-        with open(self.full_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
-
-    def save_to_json_file(self, data) -> None:
-        """Save data to json file."""
-        with open(self.full_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
-
-    def append_to_json_file(self, data) -> None:
-        """Append data to json file."""
-        existing_data = self.read_json_file()
-        existing_data.update(data)
-        with open(self.full_path, "w", encoding="utf-8") as f:
-            json.dump(existing_data, f, indent=4, ensure_ascii=False)
 
 
 def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str, dict]:
@@ -191,7 +133,9 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
 
 
 def check_changes(
-    source, items_list_instance: JsonItems, project_settings: JsonProjectConfig
+    source,
+    items_list_instance: Union[JsonItemsLocalStorage, JsonItemsS3Storage],
+    project_settings: JsonProjectConfig,
 ) -> list[dict]:
     """Check for changes on a website."""
     changed_or_new_items: list[dict] = []
@@ -224,7 +168,7 @@ def main():
     for project in JsonProjectConfig.find_all_project_files():
         changed_or_new_items: list[dict] = []
         json_project_config = JsonProjectConfig(file_name=project)
-        json_items_list = JsonItems(file_name="output_" + project)
+        json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
         # iterate over pagination
         for page_index in range(1, json_project_config.pagination_count + 1):
