@@ -206,14 +206,14 @@ def main():
 
 
 def schedule_task(hours: int):
+    # Run the task once immediately
+    main()
     # Schedule the task to run every x hours
-    # TODO: change seconds to hours
-    schedule.every(hours).seconds.do(main)
+    schedule.every(hours).hours.do(main)
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
 if __name__ == "__main__":
-    # schedule_task(20)
-    main()
+    schedule_task(24)
