@@ -36,7 +36,6 @@ class RequestHandler:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/111.0.0.0 Safari/537.36"
         }
-        self._headers = __headers
 
     def set_headers(self, headers: dict) -> None:
         """Set headers."""
@@ -87,11 +86,14 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
 
     product_dict_sku, product_dict = {}, {}
 
+    # iterate over all fields in item_fields
     for field in project_settings.item_fields:
+        # find a container with the fields
         result = source.find(
             project_settings.item_fields[field].get("tag"),
             class_=project_settings.item_fields[field].get("class"),
         )
+        # scrap data from the container
         try:
             if project_settings.item_fields[field].get("text"):
                 result = result.text
@@ -113,8 +115,10 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
 
 
 def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
-    """Load project and get all items to check."""
+    """Load project and get a container with all items to check. Returns a list of items."""
     soup = BeautifulSoup(source, "lxml")
+
+    # search for a container by tag and class or by selector
     if project_settings.items_container.get("tag"):
         items_container = soup.find(
             project_settings.items_container["tag"],
@@ -125,14 +129,17 @@ def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
             project_settings.items_container.get("selector")
         )
 
+    # search for all items in the container
     all_items_list = items_container.findAll(
         project_settings.single_item_container["tag"],
         class_=project_settings.single_item_container["class"],
     )
+
     if not all_items_list:
         logging.error("No items in main content found")
         ic("No items in main content found")
         send_email(subject=f"No items in {project_settings.project_name} found")
+
     return all_items_list
 
 
@@ -146,12 +153,15 @@ def check_changes(
     # load items list from json file
     items_list = items_list_instance.read_json_file()
 
+    # iterate over all items in the list
     for item in get_all_items_to_check(source, project_settings):
         single_result_sku, single_result_dict = scrap_single_item(
             item, project_settings
         )
 
+        # check if the item is in the list
         if single_result_sku in items_list.keys():
+            # check if the item has changed
             if single_result_dict[single_result_sku] != items_list[single_result_sku]:
                 ic("Changes found")
                 items_list[single_result_sku] = single_result_dict[single_result_sku]
@@ -167,10 +177,13 @@ def check_changes(
 
 def main():
     """Main function to start the process for every project and send an email if there is any."""
+    # TODO: set_headers, set_delay
     request = RequestHandler()
 
+    # iterate over all projects
     for project in JsonProjectConfig.find_all_project_files():
         changed_or_new_items: list[dict] = []
+        # instantiate project config class
         json_project_config = JsonProjectConfig(file_name=project)
         # instantiate storage class depend on the hosting
         if USE_AWS_S3_STORAGE:
@@ -189,6 +202,7 @@ def main():
             if response.status_code != 200:
                 break
 
+            # add new items to the dict
             changed_or_new_items.extend(
                 check_changes(
                     source=response.text,
@@ -197,8 +211,8 @@ def main():
                 )
             )
 
+        # send email if there are any changes
         if changed_or_new_items:
-            # ic(changed_or_new_items)
             send_email(
                 f"Changes detected in {json_project_config.project_name}",
                 changed_or_new_items,
