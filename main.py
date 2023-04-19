@@ -32,18 +32,18 @@ class RequestHandler:
     """Class to work with requests."""
 
     def __init__(self):
-        __headers = {
+        self.__headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
             "Chrome/111.0.0.0 Safari/537.36"
         }
 
     def set_headers(self, headers: dict) -> None:
         """Set headers."""
-        self._headers = headers
+        self.__headers = headers
 
     def read_url(self, url: str, delay: int = 0) -> Response:
         """Read url and return response. Delay is in seconds."""
-        response = requests.get(url, headers=self._headers)
+        response = requests.get(url, headers=self.__headers)
         time.sleep(delay)
         return response
 
@@ -175,10 +175,12 @@ def check_changes(
     return changed_or_new_items
 
 
-def main():
+def main(request_delay: int = 0, headers: dict = None) -> None:
     """Main function to start the process for every project and send an email if there is any."""
-    # TODO: set_headers, set_delay
     request = RequestHandler()
+    # set custom headers if any
+    if headers:
+        request.set_headers(headers=headers)
 
     # iterate over all projects
     for project in JsonProjectConfig.find_all_project_files():
@@ -192,11 +194,11 @@ def main():
             json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
         # iterate over pagination
-        for page_index in range(1, json_project_config.pagination_count + 1):
+        for page_index in range(1, 2):
             paginator_url = json_project_config.paginator_pattern.replace(
                 "$page", str(page_index)
             )
-            response = request.read_url(url=paginator_url, delay=3)
+            response = request.read_url(url=paginator_url, delay=request_delay)
             ic(paginator_url, response.status_code)
 
             if response.status_code != 200:
@@ -219,15 +221,15 @@ def main():
             )
 
 
-def schedule_task(hours: int):
+def schedule_task(hours_interval: int, request_delay: int = 0, headers: dict = None):
     # Run the task once immediately
-    main()
+    main(request_delay=request_delay, headers=headers)
     # Schedule the task to run every x hours
-    schedule.every(hours).hours.do(main)
+    schedule.every(hours_interval).hours.do(main)
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
 if __name__ == "__main__":
-    schedule_task(24)
+    schedule_task(hours_interval=24, request_delay=3)
