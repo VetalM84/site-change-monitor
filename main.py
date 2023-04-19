@@ -58,14 +58,15 @@ class JsonProjectConfig(JsonHandler):
         self._project_root = self.get_project_config()
         self.project_name = self._project_root["project_name"]
         self.home_url = self._project_root["home_url"]
-        self.paginator_pattern = self._project_root["paginator_pattern"]
-        self.pagination_count = self._project_root["paginator_count"]
-        self.items_container = self._project_root["items_container"]
-        self.single_item_container = self._project_root["single_item_container"]
-        self.item_fields = self.get_project_config()["item_fields"]
-        if "sku" not in self.item_fields:
-            logging.error(f"sku field not found in item_fields for {self.project_name}")
-            ic("sku field not found")
+        self.modules = self._project_root["modules"]
+        # self.paginator_pattern = self._project_root["paginator_pattern"]
+        # self.pagination_count = self._project_root["paginator_count"]
+        # self.items_container = self._project_root["items_container"]
+        # self.single_item_container = self._project_root["single_item_container"]
+        # self.item_fields = self.get_project_config()["item_fields"]
+        # if "sku" not in self.item_fields:
+        #     logging.error(f"sku field not found in item_fields for {self.project_name}")
+        #     ic("sku field not found")
 
     def get_project_config(self) -> dict:
         """Get project config."""
@@ -81,28 +82,28 @@ class JsonProjectConfig(JsonHandler):
         return sorted([f for f in files if f.endswith(".json")])
 
 
-def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str, dict]:
+def scrap_single_item(source, project_settings: dict) -> Tuple[str, dict]:
     """Scrap product data for single product."""
 
     product_dict_sku, product_dict = {}, {}
+    item_fields = project_settings["item_fields"]
 
     # iterate over all fields in item_fields
-    for field in project_settings.item_fields:
+    for field in item_fields:
         # find a container with the fields
         result = source.find(
-            project_settings.item_fields[field].get("tag"),
-            class_=project_settings.item_fields[field].get("class"),
+            item_fields[field].get("tag"), class_=item_fields[field].get("class")
         )
         # scrap data from the container
         try:
-            if project_settings.item_fields[field].get("text"):
+            if item_fields[field].get("text"):
                 result = result.text
-            if project_settings.item_fields[field].get("strip"):
+            if item_fields[field].get("strip"):
                 result = result.strip()
-            if project_settings.item_fields[field].get("attr"):
-                result = result.get(project_settings.item_fields[field].get("attr"))
-            if project_settings.item_fields[field].get("prepend"):
-                result = project_settings.item_fields[field].get("prepend") + result
+            if item_fields[field].get("attr"):
+                result = result.get(item_fields[field].get("attr"))
+            if item_fields[field].get("prepend"):
+                result = item_fields[field].get("prepend") + result
         except (KeyError, AttributeError) as e:
             ic(e)
             pass
@@ -114,25 +115,27 @@ def scrap_single_item(source, project_settings: JsonProjectConfig) -> Tuple[str,
     return product_dict["sku"], product_dict_sku
 
 
-def get_all_items_to_check(source, project_settings: JsonProjectConfig) -> list:
+def get_all_items_to_check(
+    source, project_settings: JsonProjectConfig, module_index: int = 0
+) -> list:
     """Load project and get a container with all items to check. Returns a list of items."""
     soup = BeautifulSoup(source, "lxml")
+    items_container = project_settings.modules[module_index]["items_container"]
+    single_item_container = project_settings.modules[module_index][
+        "single_item_container"
+    ]
 
     # search for a container by tag and class or by selector
-    if project_settings.items_container.get("tag"):
+    if items_container.get("tag"):
         items_container = soup.find(
-            project_settings.items_container["tag"],
-            class_=project_settings.items_container["class"],
+            items_container["tag"], class_=items_container["class"]
         )
     else:
-        items_container = soup.select_one(
-            project_settings.items_container.get("selector")
-        )
+        items_container = soup.select_one(items_container.get("selector"))
 
     # search for all items in the container
     all_items_list = items_container.findAll(
-        project_settings.single_item_container["tag"],
-        class_=project_settings.single_item_container["class"],
+        single_item_container["tag"], class_=single_item_container["class"]
     )
 
     if not all_items_list:
@@ -147,16 +150,17 @@ def check_changes(
     source,
     items_list_instance: Union[JsonItemsLocalStorage, JsonItemsS3Storage],
     project_settings: JsonProjectConfig,
+    module_index: int = 0,
 ) -> list[dict]:
     """Check for changes on a website."""
     changed_or_new_items: list[dict] = []
-    # load items list from json file
+    # load existing items list from the json file
     items_list = items_list_instance.read_json_file()
 
     # iterate over all items in the list
-    for item in get_all_items_to_check(source, project_settings):
+    for item in get_all_items_to_check(source, project_settings, module_index):
         single_result_sku, single_result_dict = scrap_single_item(
-            item, project_settings
+            item, project_settings.modules[module_index]
         )
 
         # check if the item is in the list
@@ -193,25 +197,29 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
         else:
             json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
-        # iterate over pagination
-        for page_index in range(1, 2):
-            paginator_url = json_project_config.paginator_pattern.replace(
-                "$page", str(page_index)
-            )
-            response = request.read_url(url=paginator_url, delay=request_delay)
-            ic(paginator_url, response.status_code)
-
-            if response.status_code != 200:
-                break
-
-            # add new items to the dict
-            changed_or_new_items.extend(
-                check_changes(
-                    source=response.text,
-                    items_list_instance=json_items_list,
-                    project_settings=json_project_config,
+        # iterate over all modules in the project
+        for index, module in enumerate(json_project_config.modules, start=0):
+            # iterate over pagination
+            # TODO: remember to change the range
+            for page_index in range(1, 3):
+                paginator_url = module.get("paginator_pattern").replace(
+                    "$page", str(page_index)
                 )
-            )
+                response = request.read_url(url=paginator_url, delay=request_delay)
+                ic(paginator_url, response.status_code)
+
+                if response.status_code != 200:
+                    break
+
+                # add new items to the dict
+                changed_or_new_items.extend(
+                    check_changes(
+                        source=response.text,
+                        items_list_instance=json_items_list,
+                        project_settings=json_project_config,
+                        module_index=index,
+                    )
+                )
 
         # send email if there are any changes
         if changed_or_new_items:
