@@ -28,11 +28,11 @@ class JsonItemsLocalStorage(JsonHandler):
     def save_to_json_file(self, data) -> None:
         """Save data to json file."""
         with open(self.full_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
     def append_to_json_file(self, data) -> None:
         """Append data to json file."""
         existing_data = self.read_json_file()
         existing_data.update(data)
         with open(self.full_path, "w", encoding="utf-8") as f:
-            json.dump(existing_data, f, indent=4, ensure_ascii=False)
+            json.dump(existing_data, f, indent=2, ensure_ascii=False)

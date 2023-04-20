@@ -54,7 +54,7 @@ class JsonItemsS3Storage(JsonHandler):
         """Save a json file to the S3 bucket."""
         try:
             self.s3_object.put(
-                Body=json.dumps(data, indent=4, ensure_ascii=False).encode("utf-8")
+                Body=json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
             )
         except Exception as e:
             ic("save_to_json_file", e)
