@@ -59,14 +59,6 @@ class JsonProjectConfig(JsonHandler):
         self.project_name = self._project_root["project_name"]
         self.home_url = self._project_root["home_url"]
         self.modules = self._project_root["modules"]
-        # self.paginator_pattern = self._project_root["paginator_pattern"]
-        # self.pagination_count = self._project_root["paginator_count"]
-        # self.items_container = self._project_root["items_container"]
-        # self.single_item_container = self._project_root["single_item_container"]
-        # self.item_fields = self.get_project_config()["item_fields"]
-        # if "sku" not in self.item_fields:
-        #     logging.error(f"sku field not found in item_fields for {self.project_name}")
-        #     ic("sku field not found")
 
     def get_project_config(self) -> dict:
         """Get project config."""
@@ -201,7 +193,9 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
         for index, module in enumerate(json_project_config.modules, start=0):
             # iterate over pagination
             # TODO: remember to change the range
-            for page_index in range(1, 3):
+            for page_index in range(
+                1, json_project_config.modules[index]["paginator_count"] + 1
+            ):
                 paginator_url = module.get("paginator_pattern").replace(
                     "$page", str(page_index)
                 )
