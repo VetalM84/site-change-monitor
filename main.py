@@ -112,24 +112,32 @@ def get_all_items_to_check(
 ) -> list:
     """Load project and get a container with all items to check. Returns a list of items."""
     soup = BeautifulSoup(source, "lxml")
-    items_container = project_settings.modules[module_index]["items_container"]
-    single_item_container = project_settings.modules[module_index][
+
+    items_container = project_settings.modules[module_index].get("items_container")
+    single_item_container = project_settings.modules[module_index].get(
         "single_item_container"
-    ]
-
-    # search for a container by tag and class or by selector
-    if items_container.get("tag"):
-        items_container = soup.find(
-            items_container["tag"], class_=items_container["class"]
-        )
-    else:
-        items_container = soup.select_one(items_container.get("selector"))
-
-    # search for all items in the container
-    all_items_list = items_container.findAll(
-        single_item_container["tag"], class_=single_item_container["class"]
     )
 
+    # check if there is a container with all items
+    if items_container:
+        # search for a container by tag and class or by selector
+        if items_container.get("tag"):
+            items_container = soup.find(
+                items_container["tag"], class_=items_container["class"]
+            )
+        else:
+            items_container = soup.select_one(items_container.get("selector"))
+
+        # extract all items from the container to list
+        all_items_list = items_container.findAll(
+            single_item_container["tag"], class_=single_item_container["class"]
+        )
+    else:
+        # search for a single item
+        all_items_list = soup.findAll(
+            single_item_container["tag"], class_=single_item_container["class"],
+            limit=1
+        )
     if not all_items_list:
         logging.error("No items in main content found")
         ic("No items in main content found")
@@ -191,29 +199,35 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
 
         # iterate over all modules in the project
         for index, module in enumerate(json_project_config.modules, start=0):
-            # iterate over pagination
-            # TODO: remember to change the range
-            for page_index in range(
-                1, json_project_config.modules[index]["paginator_count"] + 1
-            ):
-                paginator_url = module.get("paginator_pattern").replace(
-                    "$page", str(page_index)
-                )
-                response = request.read_url(url=paginator_url, delay=request_delay)
-                ic(paginator_url, response.status_code)
 
-                if response.status_code != 200:
-                    break
-
-                # add new items to the dict
-                changed_or_new_items.extend(
-                    check_changes(
-                        source=response.text,
-                        items_list_instance=json_items_list,
-                        project_settings=json_project_config,
-                        module_index=index,
+            # if there is a paginator pattern, iterate over all pages
+            if module.get("paginator_pattern"):
+                # iterate over pagination
+                for page_index in range(1, module.get("paginator_count", 0) + 1):
+                    paginator_url = module.get("paginator_pattern").replace(
+                        "$page", str(page_index)
                     )
+                    response = request.read_url(url=paginator_url, delay=request_delay)
+                    ic(paginator_url, response.status_code)
+
+                    if response.status_code != 200:
+                        break
+            else:
+                # if there is no paginator, just load the single url
+                response = request.read_url(
+                    url=module.get("single_url"), delay=request_delay
                 )
+                ic(module.get("single_url"), response.status_code)
+
+            # add new items to the dict
+            changed_or_new_items.extend(
+                check_changes(
+                    source=response.text,
+                    items_list_instance=json_items_list,
+                    project_settings=json_project_config,
+                    module_index=index,
+                )
+            )
 
         # send email if there are any changes
         if changed_or_new_items:
