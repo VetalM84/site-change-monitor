@@ -1,42 +1,46 @@
 {
-    "project_name": "navin",
-    "home_url": "https://navin.ua",
-    "paginator_pattern": "https://navin.ua/ru/polotencesushiteli/elektricheskij/?page=$page",
-    "paginator_count": 17,
-    "items_container": {
+  "project_name": "navin",
+  "home_url": "https://navin.ua",
+  "modules": [
+    {
+      "paginator_pattern": "https://navin.ua/ru/polotencesushiteli/elektricheskij/?page=$page",
+      "paginator_count": 17,
+      "items_container": {
         "tag": "div",
         "class": "category-page"
-    },
-    "single_item_container": {
+      },
+      "single_item_container": {
         "tag": "div",
         "class": "product-thumb"
-    },
-    "item_fields": {
+      },
+      "item_fields": {
         "sku": {
-            "tag": "div",
-            "class": "product-name",
-            "text": true,
-            "strip": true
+          "tag": "div",
+          "class": "product-name",
+          "text": true,
+          "strip": true
         },
         "price": {
-            "tag": "div",
-            "class": "price",
-            "attr": "data-price-no-format"
+          "tag": "div",
+          "class": "price",
+          "attr": "data-price-no-format"
         },
         "sale_price": {
-            "tag": "span",
-            "class": "price",
-            "attr": "data-special-no-format"
+          "tag": "span",
+          "class": "price",
+          "attr": "data-special-no-format"
         },
         "stock": {
-            "tag": "div",
-            "class": "box-stock-status",
-            "text": true,
-            "strip": true
+          "tag": "div",
+          "class": "box-stock-status",
+          "text": true,
+          "strip": true
         },
         "link": {
-            "tag": "a",
-            "attr": "href"
+          "tag": "a",
+          "attr": "href"
         }
+      }
     }
+  ]
 }
