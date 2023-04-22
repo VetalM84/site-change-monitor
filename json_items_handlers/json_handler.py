@@ -22,7 +22,7 @@ class JsonHandler:
         return folder_path / file_path
 
     def read_json_file(self):
-        """Read json file."""
+        """Read json file and return empty dictionary if it is not exists."""
         try:
             with open(self.full_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
