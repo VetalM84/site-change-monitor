@@ -14,12 +14,6 @@
         "class": "cs-product-gallery__item js-productad"
       },
       "item_fields": {
-        "title": {
-          "tag": "a",
-          "class": "cs-goods-title",
-          "text": true,
-          "strip": true
-        },
         "sku": {
           "tag": "span",
           "class": "cs-goods-sku",
