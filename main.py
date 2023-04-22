@@ -1,11 +1,13 @@
 """Main file to scrap items."""
 
+import json
 import logging
 import os
 import time
 from pathlib import Path
 from typing import Tuple, Union
 
+import jsonschema
 import requests
 import schedule
 from bs4 import BeautifulSoup
@@ -66,6 +68,21 @@ class JsonProjectConfig(JsonHandler):
             Path(self._file_dir).mkdir(parents=True, exist_ok=True)
         return self.read_json_file()
 
+    def validate_json_project(self):
+        """Read json project file and validate it against schema."""
+        path_to_schema = Path("schema") / "project_schema.json"
+
+        # Load the JSON schema file
+        with open(path_to_schema, "r", encoding="utf-8") as f:
+            schema = json.load(f)
+
+        # Load the JSON data file
+        with open(self.full_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # Validate the data against the schema
+        jsonschema.validate(instance=data, schema=schema)
+
     @staticmethod
     def find_all_project_files(file_dir: str = _file_dir) -> list:
         """Find all json project config files in a directory."""
@@ -98,7 +115,6 @@ def scrap_single_item(source, project_settings: dict) -> Tuple[str, dict]:
                 result = item_fields[field].get("prepend") + result
         except (KeyError, AttributeError) as e:
             ic(e)
-            pass
 
         if result:
             product_dict[field] = result
@@ -135,8 +151,7 @@ def get_all_items_to_check(
     else:
         # search for a single item
         all_items_list = soup.findAll(
-            single_item_container["tag"], class_=single_item_container["class"],
-            limit=1
+            single_item_container["tag"], class_=single_item_container["class"], limit=1
         )
     if not all_items_list:
         logging.error("No items in main content found")
@@ -179,6 +194,27 @@ def check_changes(
     return changed_or_new_items
 
 
+def get_url_response(module: dict, request: RequestHandler, request_delay: int):
+    """Method to check if there is a paginator or single url and send a request to the url."""
+    # if there is a paginator pattern, iterate over all pages
+    if module.get("paginator_pattern"):
+        # iterate over pagination
+        for page_index in range(1, module.get("paginator_count") + 1):
+            paginator_url = module.get("paginator_pattern").replace(
+                "$page", str(page_index)
+            )
+            response = request.read_url(url=paginator_url, delay=request_delay)
+            ic(paginator_url, response.status_code)
+
+            if response.status_code != 200:
+                break
+    else:
+        # if there is no paginator, just load the single url
+        response = request.read_url(url=module.get("single_url"), delay=request_delay)
+        ic(module.get("single_url"), response.status_code)
+    return response
+
+
 def main(request_delay: int = 0, headers: dict = None) -> None:
     """Main function to start the process for every project and send an email if there is any."""
     request = RequestHandler()
@@ -191,43 +227,37 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
         changed_or_new_items: list[dict] = []
         # instantiate project config class
         json_project_config = JsonProjectConfig(file_name=project)
-        # instantiate storage class depend on the hosting
-        if USE_AWS_S3_STORAGE:
-            json_items_list = JsonItemsS3Storage(file_name="output_" + project)
-        else:
-            json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
-        # iterate over all modules in the project
-        for index, module in enumerate(json_project_config.modules, start=0):
+        # check if the project is valid against json schema
+        try:
+            json_project_config.validate_json_project()
 
-            # if there is a paginator pattern, iterate over all pages
-            if module.get("paginator_pattern"):
-                # iterate over pagination
-                for page_index in range(1, module.get("paginator_count", 0) + 1):
-                    paginator_url = module.get("paginator_pattern").replace(
-                        "$page", str(page_index)
-                    )
-                    response = request.read_url(url=paginator_url, delay=request_delay)
-                    ic(paginator_url, response.status_code)
-
-                    if response.status_code != 200:
-                        break
+            # instantiate storage class depend on the hosting
+            if USE_AWS_S3_STORAGE:
+                json_items_list = JsonItemsS3Storage(file_name="output_" + project)
             else:
-                # if there is no paginator, just load the single url
-                response = request.read_url(
-                    url=module.get("single_url"), delay=request_delay
-                )
-                ic(module.get("single_url"), response.status_code)
+                json_items_list = JsonItemsLocalStorage(file_name="output_" + project)
 
-            # add new items to the dict
-            changed_or_new_items.extend(
-                check_changes(
-                    source=response.text,
-                    items_list_instance=json_items_list,
-                    project_settings=json_project_config,
-                    module_index=index,
+            # iterate over all modules in the project
+            for index, module in enumerate(json_project_config.modules, start=0):
+                # check if there is a paginator or single url and send a request to the url
+                response = get_url_response(module, request, request_delay)
+
+                # add new items to the dict
+                changed_or_new_items.extend(
+                    check_changes(
+                        source=response.text,
+                        items_list_instance=json_items_list,
+                        project_settings=json_project_config,
+                        module_index=index,
+                    )
                 )
+        except jsonschema.exceptions.ValidationError as e:
+            ic(f"Invalid project config for {json_project_config.project_name}", e)
+            logging.error(
+                f"Invalid project config for {json_project_config.project_name}"
             )
+            continue
 
         # send email if there are any changes
         if changed_or_new_items:
