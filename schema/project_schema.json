@@ -94,7 +94,11 @@
           "required": [
             "sku"
           ]
-        }
+        },
+        "required": [
+          "single_item_container",
+          "item_fields"
+        ]
       }
     }
   },
