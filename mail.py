@@ -29,12 +29,13 @@ def send_email(subject: str, changes=None):
 
     # Create email body as an unpacked dicts
     letter_lines = []
-    for item in changes:
-        for key, value in item.items():
-            letter_lines.append(f"{key}: {value}")
-        letter_lines.append("*" * 20)
-    email_str = "\n".join(letter_lines)
-    m.set_payload(payload=email_str, charset="utf-8")
+    if changes:
+        for item in changes:
+            for key, value in item.items():
+                letter_lines.append(f"{key}: {value}")
+            letter_lines.append("*" * 20)
+        email_str = "\n".join(letter_lines)
+        m.set_payload(payload=email_str, charset="utf-8")
 
     context = ssl.create_default_context()
     try:
