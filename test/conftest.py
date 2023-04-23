@@ -8,6 +8,22 @@ import pytest
 
 
 @pytest.fixture
+def mock_project_object(json_project_settings):
+    """Mock project object."""
+    project = MagicMock()
+    project.project_name.return_value = json_project_settings["project_name"]
+    project.modules.return_value = json_project_settings["modules"]
+    project.modules.__getitem__.return_value = json_project_settings["modules"][0]
+
+    # another way to mock the return value of the get method
+    # project.modules[0].get.side_effect = [
+    #     json_project_settings["modules"][0]["items_container"],
+    #     json_project_settings["modules"][0]["single_item_container"],
+    # ]
+    return project
+
+
+@pytest.fixture
 def json_project_settings():
     path = Path("fixtures") / "project_settings.json"
     with open(path, "r", encoding="utf-8") as f:
