@@ -20,7 +20,6 @@ def test_scrap_single_item(single_item_html_source, json_project_settings):
 
 def test_get_all_items_to_check(items_container_html_source, mock_project_object):
     """Test get_all_items_to_check function."""
-
     # Test case 1: Get all items when container is specified with tag and class
     all_items = get_all_items_to_check(
         items_container_html_source, mock_project_object, 0
@@ -33,7 +32,13 @@ def test_get_all_items_to_check(items_container_html_source, mock_project_object
     )
     assert len(all_items) == 24
 
-    # # Test case 3: Return empty list when no items are found in the container
+    # Test case 3: Get single item when container is specified with single_url
+    # all_items = get_all_items_to_check(
+    #     items_container_html_source, mock_project_object, 1
+    # )
+    # assert len(all_items) == 1
+
+    # Test case 4: Return empty list when no items are found in the container
     all_items = get_all_items_to_check(
         items_container_html_source, mock_project_object, 0
     )
