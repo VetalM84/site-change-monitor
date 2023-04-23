@@ -13,13 +13,17 @@ def mock_project_object(json_project_settings):
     project = MagicMock()
     project.project_name.return_value = json_project_settings["project_name"]
     project.modules.return_value = json_project_settings["modules"]
-    project.modules.__getitem__.return_value = json_project_settings["modules"][0]
-
     # another way to mock the return value of the get method
-    # project.modules[0].get.side_effect = [
-    #     json_project_settings["modules"][0]["items_container"],
-    #     json_project_settings["modules"][0]["single_item_container"],
-    # ]
+    # project.modules.__getitem__.return_value = json_project_settings["modules"][0]
+
+    project.modules[0].get.side_effect = [
+        json_project_settings["modules"][0]["items_container"],
+        json_project_settings["modules"][0]["single_item_container"],
+        {"selector": "ul.cs-product-gallery"},
+        json_project_settings["modules"][0]["single_item_container"],
+        json_project_settings["modules"][0]["items_container"],
+        {"tag": "div", "class": "test"},
+    ]
     return project
 
 
