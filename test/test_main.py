@@ -1,8 +1,9 @@
 """Test cases for main.py."""
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 from bs4 import BeautifulSoup
 
 from main import get_all_items_to_check, scrap_single_item
@@ -30,11 +31,13 @@ def test_get_all_items_to_check(items_container_html_source, mock_project_object
         items_container_html_source, mock_project_object, 0
     )
     assert len(all_items) == 24
-    # Test case 4: Return empty list when no items are found in the container
-    all_items = get_all_items_to_check(
-        items_container_html_source, mock_project_object, 0
-    )
+    # Test case 4: Return empty list when no items are found in the container and mock send_email
+    with patch("main.send_email") as send_email_mock:
+        all_items = get_all_items_to_check(
+            items_container_html_source, mock_project_object, 0
+        )
     assert len(all_items) == 0
+    assert send_email_mock.called
 
 
 def test_get_all_items_to_check_single_page(single_page_html_source, mock_project_object_single_page):
@@ -43,4 +46,3 @@ def test_get_all_items_to_check_single_page(single_page_html_source, mock_projec
         single_page_html_source, mock_project_object_single_page, 1
     )
     assert len(all_items) == 1
-
