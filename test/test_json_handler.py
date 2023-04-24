@@ -11,7 +11,7 @@ class TestJsonHandler(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        JsonHandler._file_dir = Path("test/fixtures")
+        JsonHandler._file_dir = Path("../test/fixtures")
 
     @classmethod
     def tearDownClass(cls):
@@ -20,7 +20,7 @@ class TestJsonHandler(unittest.TestCase):
 
     def setUp(self):
         """Set up test."""
-        self.file_name = "test.json"
+        self.file_name = "project_settings.json"
         self.json_handler = JsonHandler(self.file_name)
 
     def tearDown(self):
@@ -31,3 +31,7 @@ class TestJsonHandler(unittest.TestCase):
         """Test set_full_path method."""
         file_path = Path(JsonHandler._file_dir) / self.file_name
         self.assertEqual(self.json_handler.set_full_path(), file_path)
+
+    def test_read_json_file(self):
+        """Test read_json_file method."""
+        self.assertTrue(type(self.json_handler.read_json_file()) is dict)
