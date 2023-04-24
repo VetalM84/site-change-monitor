@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Optional
 
 from icecream import ic
 
@@ -9,7 +10,7 @@ from icecream import ic
 class JsonHandler:
     """Class to work with json files."""
 
-    _file_dir: str = None
+    _file_dir: Optional[str] = None
 
     def __init__(self, file_name: str):
         self._file_name = file_name
@@ -28,5 +29,5 @@ class JsonHandler:
                 data = json.load(f)
             return data
         except FileNotFoundError as e:
-            ic(e)
+            ic(e, self.full_path)
             return {}
