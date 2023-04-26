@@ -197,15 +197,18 @@ def check_changes(
     return changed_or_new_items
 
 
-def get_url_response(module: dict, request: RequestHandler, request_delay: int):
+def get_url_response(
+    module: dict, request: RequestHandler, request_delay: int
+) -> Response:
     """Method to check if there is a paginator or single url and send a request to the url."""
+    paginator_pattern = module.get("paginator_pattern")
+
     # if there is a paginator pattern, iterate over all pages
-    if module.get("paginator_pattern"):
+    if paginator_pattern:
         # iterate over pagination
-        for page_index in range(1, module.get("paginator_count") + 1):
-            paginator_url = module.get("paginator_pattern").replace(
-                "$page", str(page_index)
-            )
+        paginator_count = module.get("paginator_count")
+        for page_index in range(1, paginator_count + 1):
+            paginator_url = paginator_pattern.replace("$page", str(page_index))
             response = request.read_url(url=paginator_url, delay=request_delay)
             ic(paginator_url, response.status_code)
 
@@ -213,8 +216,9 @@ def get_url_response(module: dict, request: RequestHandler, request_delay: int):
                 break
     else:
         # if there is no paginator, just load the single url
-        response = request.read_url(url=module.get("single_url"), delay=request_delay)
-        ic(module.get("single_url"), response.status_code)
+        single_url = module.get("single_url")
+        response = request.read_url(url=single_url, delay=request_delay)
+        ic(single_url, response.status_code)
     return response
 
 
