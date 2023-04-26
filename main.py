@@ -167,13 +167,16 @@ def check_changes(
     project_settings: JsonProjectConfig,
     module_index: int = 0,
 ) -> list[dict]:
-    """Check for changes on a website."""
+    """Check for changes on a website.
+    Return a list with dicts changed or new items or empty list if there are no any changes.
+    """
     changed_or_new_items: list[dict] = []
     # load existing items list from the json file
     items_list = items_list_instance.read_json_file()
 
     # iterate over all items in the list
     for item in get_all_items_to_check(source, project_settings, module_index):
+        # scrap data for a single item return_value=Tuple("val1", {"val1": {"sku": "val1", ...}})
         single_result_sku, single_result_dict = scrap_single_item(
             item, project_settings.modules[module_index]
         )
