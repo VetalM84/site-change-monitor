@@ -5,7 +5,12 @@ from unittest.mock import MagicMock, patch
 
 from bs4 import BeautifulSoup
 
-from main import check_changes, get_all_items_to_check, get_url_response, scrap_single_item
+from main import (
+    check_changes,
+    get_all_items_to_check,
+    get_url_response,
+    scrap_single_item,
+)
 
 
 def test_scrap_single_item(single_item_html_source, json_project_settings):
@@ -21,7 +26,9 @@ def test_scrap_single_item(single_item_html_source, json_project_settings):
 class TestGetAllItemsToCheck:
     """Test cases for get_all_items_to_check function."""
 
-    def test_get_all_items_to_check(self, items_container_html_source, mock_project_object):
+    def test_get_all_items_to_check(
+        self, items_container_html_source, mock_project_object
+    ):
         """Test get_all_items_to_check function."""
         # Test case 1: Get all items when container is specified with tag and class
         all_items = get_all_items_to_check(
@@ -61,12 +68,12 @@ class TestGetUrlResponse(unittest.TestCase):
         self.module_with_paginator = {
             "paginator_pattern": "https://example.com?page=$page",
             "paginator_count": 3,
-            "single_url": None
+            "single_url": None,
         }
         self.module_without_paginator = {
             "paginator_pattern": None,
             "paginator_count": None,
-            "single_url": "https://example.com"
+            "single_url": "https://example.com",
         }
 
     def test_get_url_response_with_paginator(self):
@@ -74,13 +81,13 @@ class TestGetUrlResponse(unittest.TestCase):
         self.request_mock.read_url.side_effect = [
             MagicMock(status_code=200),
             MagicMock(status_code=404),
-            MagicMock(status_code=200)
+            MagicMock(status_code=200),
         ]
         expected_response = MagicMock(status_code=404)
         actual_response = get_url_response(
             module=self.module_with_paginator,
             request=self.request_mock,
-            request_delay=self.request_delay
+            request_delay=self.request_delay,
         )
         self.assertEqual(actual_response.status_code, expected_response.status_code)
 
@@ -91,7 +98,7 @@ class TestGetUrlResponse(unittest.TestCase):
         actual_response = get_url_response(
             module=self.module_without_paginator,
             request=self.request_mock,
-            request_delay=self.request_delay
+            request_delay=self.request_delay,
         )
         self.assertEqual(actual_response.status_code, expected_response.status_code)
 
