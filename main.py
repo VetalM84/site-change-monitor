@@ -20,6 +20,8 @@ from mail import send_email
 
 load_dotenv()
 
+RUN_AT_START = bool(int(os.getenv("RUN_AT_START")))
+INTERVAL_TO_RUN = int(os.getenv("INTERVAL_TO_RUN"))
 USE_AWS_S3_STORAGE = bool(int(os.getenv("USE_AWS_S3_STORAGE")))
 
 logging.basicConfig(
@@ -276,7 +278,8 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
 
 def schedule_task(hours_interval: int, request_delay: int = 0, headers: dict = None):
     # Run the task once immediately
-    main(request_delay=request_delay, headers=headers)
+    if RUN_AT_START:
+        main(request_delay=request_delay, headers=headers)
     # Schedule the task to run every x hours
     schedule.every(hours_interval).hours.do(main)
     while True:
@@ -285,4 +288,4 @@ def schedule_task(hours_interval: int, request_delay: int = 0, headers: dict = N
 
 
 if __name__ == "__main__":
-    schedule_task(hours_interval=24, request_delay=3)
+    schedule_task(hours_interval=INTERVAL_TO_RUN, request_delay=3)
