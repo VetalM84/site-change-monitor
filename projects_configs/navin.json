@@ -4,7 +4,7 @@
   "modules": [
     {
       "paginator_pattern": "https://navin.ua/ru/polotencesushiteli/elektricheskij/?page=$page",
-      "paginator_count": 17,
+      "paginator_count": 15,
       "items_container": {
         "tag": "div",
         "class": "category-page"
