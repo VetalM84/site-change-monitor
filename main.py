@@ -21,7 +21,7 @@ from mail import send_email
 load_dotenv()
 
 RUN_AT_START = bool(int(os.getenv("RUN_AT_START")))
-INTERVAL_TO_RUN = int(os.getenv("INTERVAL_TO_RUN"))
+SCHEDULE_TIME = os.getenv("SCHEDULE_TIME")
 USE_AWS_S3_STORAGE = bool(int(os.getenv("USE_AWS_S3_STORAGE")))
 
 logging.basicConfig(
@@ -276,16 +276,16 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
             )
 
 
-def schedule_task(hours_interval: int, request_delay: int = 0, headers: dict = None):
+def schedule_task(schedule_time: str, request_delay: int = 0, headers: dict = None):
     # Run the task once immediately
     if RUN_AT_START:
         main(request_delay=request_delay, headers=headers)
-    # Schedule the task to run every x hours
-    schedule.every(hours_interval).hours.do(main)
+    # Schedule the task to run at a specific time
+    schedule.every().day.at(schedule_time).do(main)
     while True:
         schedule.run_pending()
         time.sleep(1)
 
 
 if __name__ == "__main__":
-    schedule_task(hours_interval=INTERVAL_TO_RUN, request_delay=3)
+    schedule_task(schedule_time=SCHEDULE_TIME, request_delay=3)
