@@ -271,8 +271,9 @@ def main(request_delay: int = 0, headers: dict = None) -> None:
         # send email if there are any changes
         if changed_or_new_items:
             send_email(
-                f"Changes detected in {json_project_config.project_name}",
-                changed_or_new_items,
+                subject=f"Changes detected in {json_project_config.project_name}",
+                project_name=json_project_config.project_name,
+                json_file_path=json_items_list.full_path,
             )
 
 
