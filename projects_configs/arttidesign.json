@@ -4,7 +4,7 @@
   "modules": [
     {
       "paginator_pattern": "https://arttidesign.com.ua/ua/g86105736-vertikalnye-dizajnerskie-radiatory/page_$page",
-      "paginator_count": 5,
+      "paginator_count": 7,
       "items_container": {
         "tag": "ul",
         "class": "cs-product-gallery"
