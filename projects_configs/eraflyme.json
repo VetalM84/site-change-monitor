@@ -4,7 +4,7 @@
   "modules": [
     {
       "paginator_pattern": "https://flyme.ua/ru/polotencesushiteli/page-$page",
-      "paginator_count": 2,
+      "paginator_count": 3,
       "items_container": {
         "selector": "#mfilter-content-container > div:nth-child(5)"
       },
